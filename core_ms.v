@@ -76,6 +76,13 @@ wire    [  31: 0]     mem_result         ;
 wire    [   3: 0]     ms_gpr_strb        ;
 wire    [  31: 0]     ms_result          ;
 
+wire                  ms_ebreak          ;
+wire                  ms_ecall           ;
+wire                  ms_ex              ;
+wire                  ms_mret            ;
+wire    [  31: 0]     ms_excode          ;
+wire    [  31: 0]     ms_epc             ;
+
 assign ms_result        = ms_res_from_mem ? ms_mem_res :
                                             ms_exe_result;
 assign ms_gpr_strb = {4{ms_gpr_we}};
@@ -136,12 +143,12 @@ assign ms_fwd_blk_bus = {
 //-------------------------------------------------------------
 // exception
 //-------------------------------------------------------------
-wire                  ms_ecall           ;
-wire                  ms_ebreak          ;
-wire                  ms_ex              ;
-wire                  ms_mret            ;
-wire    [  31: 0]     ms_excode          ;
-wire    [  31: 0]     ms_epc             ;
+// wire                  ms_ecall           ;
+// wire                  ms_ebreak          ;
+// wire                  ms_ex              ;
+// wire                  ms_mret            ;
+// wire    [  31: 0]     ms_excode          ;
+// wire    [  31: 0]     ms_epc             ;
 
 assign ms_mret          = es_mret;
 assign ms_ecall         = es_ecall;
@@ -160,12 +167,8 @@ wire    [  15: 0]     ms_lh_data         ;
 wire    [   7: 0]     ms_lb_data         ;
 
 assign ms_lw_data       = data_sram_rdata;
-assign ms_lh_data       = ({16{ms_ld_addr == 2'b00}} & data_sram_rdata[15: 0]) |
-                          ({16{ms_ld_addr == 2'b10}} & data_sram_rdata[31:16]) ;
-assign ms_lb_data       = ({8 {ms_ld_addr == 2'b00}} & data_sram_rdata[ 7: 0]) |
-                          ({8 {ms_ld_addr == 2'b01}} & data_sram_rdata[15: 8]) |
-                          ({8 {ms_ld_addr == 2'b10}} & data_sram_rdata[23:16]) |
-                          ({8 {ms_ld_addr == 2'b11}} & data_sram_rdata[31:24]) ;
+assign ms_lh_data       = data_sram_rdata[15: 0];
+assign ms_lb_data       = data_sram_rdata[ 7: 0];
 
 assign ms_mem_res       = ms_inst_lh  ? {{16{ms_lh_data[15]}},ms_lh_data} :
                           ms_inst_lhu ? {16'b0,ms_lh_data}:

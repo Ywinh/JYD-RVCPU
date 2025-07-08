@@ -15,11 +15,11 @@ module pre_if_stage(                                                // instructi
     input                    ws_mret             ,
     input      [  31: 0]     csr_mtvec           ,
     input      [  31: 0]     csr_mepc            ,
-    // inst_ram interface
-    output                   inst_sram_en        ,
-    output     [   3: 0]     inst_sram_wen       ,
-    output     [  31: 0]     inst_sram_addr      ,
-    output     [  31: 0]     inst_sram_wdata     
+    // IROM interface
+    // output                   inst_sram_en        ,
+    // output     [   3: 0]     inst_sram_wen       ,
+    // output     [  31: 0]     inst_sram_wdata     
+    output     [  31: 0]     inst_sram_addr
     );
 
 //-------------------------------------------------------------
@@ -27,6 +27,9 @@ module pre_if_stage(                                                // instructi
 //-------------------------------------------------------------
 // to fs
 wire    [  31: 0]     ps_pc              ;
+wire                  ps_ex              ;
+wire    [  31: 0]     ps_epc             ;
+wire    [  31: 0]     ps_excode          ;
 
 assign ps_to_fs_bus    = {
     ps_epc   ,                                                      //96:65
@@ -75,9 +78,9 @@ assign ps_pc            = ws_mret  ? csr_mepc  :
 // exception
 //-------------------------------------------------------------
 wire                  ps_addr_error      ;
-wire                  ps_ex              ;
-wire    [  31: 0]     ps_epc             ;
-wire    [  31: 0]     ps_excode          ;
+// wire                  ps_ex              ;
+// wire    [  31: 0]     ps_epc             ;
+// wire    [  31: 0]     ps_excode          ;
 
 assign ps_addr_error    = (ps_pc[1:0] != 2'b00);
 assign ps_ex            = ps_addr_error && ps_valid;

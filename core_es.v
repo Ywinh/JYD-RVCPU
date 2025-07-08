@@ -17,10 +17,10 @@ module exe_stage(
     input                    ws_mret             ,
     // forword & block from es
     output     [`ES_FWD_BLK_BUS_WD -1:0]     es_fwd_blk_bus      ,
-    // data sram interface
-    output                   data_sram_en        ,
-    output     [   3: 0]     data_sram_wen       ,
-    output     [  31: 0]     data_sram_addr      ,
+    // DRAM interface
+    output                   data_sram_wen        ,
+    output     [   1: 0]     data_sram_mask      , // mask
+    output     [  31: 0]     data_sram_addr      , // perip_addr
     output     [  31: 0]     data_sram_wdata     
 );
 //-------------------------------------------------------------
@@ -116,6 +116,10 @@ assign {
 } = ds_to_es_bus_r;
 
 //to ms
+wire    [  31: 0]     es_epc             ;
+wire                  es_ex              ;
+wire    [  31: 0]     es_excode          ;
+
 assign es_to_ms_bus = {
     es_einst        ,                                               //220:189
     inst_ebreak     ,                                               //188:188
@@ -189,10 +193,10 @@ wire    [ 4: 0]     es_rf_dest         ;
 wire    [31: 0]     es_rf_data         ;
 wire                es_blk_valid       ;
 
-assign es_fwd_valid     = {4{ es_valid && es_gpr_we && !es_res_from_mem }};
+assign es_fwd_valid     = {4{ es_valid && es_gpr_we && !es_res_from_mem }}; // 1:前递有效 0:前递无效
 assign es_rf_dest       = es_dest;
 assign es_rf_data       = es_exe_result;
-assign es_blk_valid     = es_valid && es_res_from_mem;
+assign es_blk_valid     = es_valid && es_res_from_mem; // 1:阻塞 0:不阻塞
 
 assign es_fwd_blk_bus = {
     es_fwd_valid,   // 41:38
@@ -212,9 +216,9 @@ assign es_w_addr_error  = (es_res_from_mem || es_mem_we) &&
 assign es_h_addr_error  = (es_res_from_mem || es_mem_we) &&
                           (es_alu_result[0] != 1'b0) && 
                           (es_inst_lh || es_inst_sh);
-wire                  es_ex              ;
-wire    [  31: 0]     es_excode          ;
-wire    [  31: 0]     es_epc             ;
+// wire                  es_ex              ;
+// wire    [  31: 0]     es_excode          ;
+// wire    [  31: 0]     es_epc             ;
 
 assign es_ex = (es_w_addr_error || es_h_addr_error || ds_ex) && es_valid;
 assign es_excode = (es_w_addr_error || es_h_addr_error) ? `EX_LAM : ds_excode;
@@ -224,39 +228,27 @@ assign es_epc           = ds_epc;
 // data ram
 //-------------------------------------------------------------
 wire    [  31: 0]     es_ram_wdata       ;
-assign es_ram_wdata     = es_inst_sb ? {4{es_rs2_value[ 7:0]}} :
-                          es_inst_sh ? {2{es_rs2_value[15:0]}} :
-                          /*es_inst_sw*/  es_rs2_value;
+assign es_ram_wdata     =  es_rs2_value;
+
+wire [1:0] es_access_size;  // 00:1B, 01:2B, 10:4B
+assign es_access_size = es_inst_sb ? 2'b00 :
+                        es_inst_sh ? 2'b01 :
+                        /*sw*/       2'b10;
 
 wire    [   1: 0]     es_st_addr         ;
-wire    [   3: 0]     es_strb            ;
-wire    [   3: 0]     es_sw_strb         ;
-wire    [   3: 0]     es_sh_strb         ;
-wire    [   3: 0]     es_sb_strb         ;
 wire    [  31: 0]     es_mem_dest        ;
 
-assign es_mem_dest      = {es_alu_result[31:2],2'b0};
-assign es_st_addr       = es_alu_result[1:0];
+assign es_mem_dest      = {es_alu_result[31:2],2'b0}; 
+assign es_st_addr       = es_alu_result[1:0]; //偏移
 
-assign es_sw_strb       = 4'b1111;
-assign es_sh_strb       = ( {4{es_st_addr == 2'b00}} & 4'b0011 ) |
-                          ( {4{es_st_addr == 2'b10}} & 4'b1100 );
+// 地址异常检测
+wire addr_misalign      = (es_inst_sh && es_st_addr[0]) |
+                     (es_inst_sw && (es_st_addr != 2'b00));
 
-assign es_sb_strb       = ( {4{es_st_addr == 2'b00}} & 4'b0001 ) |
-                          ( {4{es_st_addr == 2'b01}} & 4'b0010 ) |
-                          ( {4{es_st_addr == 2'b10}} & 4'b0100 ) |
-                          ( {4{es_st_addr == 2'b11}} & 4'b1000 );                         
-
-assign es_strb          = es_inst_sw ? es_sw_strb :
-                          es_inst_sh ? es_sh_strb :
-                          es_inst_sb ? es_sb_strb :
-                          4'b0000;
-
-assign data_sram_en     = 1'b1;
-assign data_sram_wen    = (es_mem_we && es_valid) ? es_strb : 4'b0000;
+// wen含义与模版有出入，修改
+assign data_sram_wen     = es_valid && es_mem_we;
+assign data_sram_mask    = es_access_size;
 assign data_sram_addr   = es_mem_dest;
 assign data_sram_wdata  = es_ram_wdata;
-
-
 
 endmodule

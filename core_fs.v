@@ -17,7 +17,7 @@ module if_stage(
     // ex
     input                    ws_ex               ,
     input                    ws_mret             ,
-    // inst_ram interface
+    // IROM interface
     input      [  31: 0]     inst_sram_rdata  
 );
 
@@ -41,6 +41,9 @@ assign {
 //to ds
 wire    [  31: 0]     fs_inst            ;
 wire    [  31: 0]     fs_pc              ;
+wire    [  31: 0]     fs_epc             ;
+wire    [  31: 0]     fs_excode          ;
+wire                  fs_ex              ;
 
 assign fs_pc            = ps_pc;
 
@@ -73,9 +76,9 @@ end
 //-------------------------------------------------------------
 // exception
 //-------------------------------------------------------------
-wire    [  31: 0]     fs_epc             ;
-wire    [  31: 0]     fs_excode          ;
-wire                  fs_ex              ;
+// wire    [  31: 0]     fs_epc             ;
+// wire    [  31: 0]     fs_excode          ;
+// wire                  fs_ex              ;
 
 assign fs_epc           = ps_epc;
 assign fs_excode        = ps_excode;

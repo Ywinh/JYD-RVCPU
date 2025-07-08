@@ -38,8 +38,44 @@ wire    [  31: 0]     fs_excode          ;
 wire                  fs_ex              ;
 wire    [  31: 0]     ds_inst            ;
 wire    [  31: 0]     ds_pc              ;
+wire    [  31: 0]     ds_einst           ;
+wire    [  31: 0]     ds_epc             ;
+wire    [  31: 0]     ds_excode          ;
+wire                  ds_ex              ;
+
+wire    [  31: 0]     csr_wdata          ;
+wire                  csr_op             ;
 
 wire                  inst_jl            ;
+wire                  inst_ebreak        ;
+wire                  inst_ecall         ;
+wire                  inst_mret          ;
+wire                  inst_lw            ;
+wire                  inst_lh            ;
+wire                  inst_lhu           ;
+wire                  inst_lb            ;
+wire                  inst_lbu           ;
+wire                  inst_sw            ;
+wire                  inst_sh            ;
+wire                  inst_sb            ;
+
+wire                  rs1_is_4           ;
+wire                  rs1_is_imm_u       ;
+wire                  rs2_is_zero        ;
+wire                  rs2_is_imm         ;
+wire                  rs2_is_shamt       ;
+wire                  rs2_is_pc          ;
+
+wire    [  19: 0]     imm_u              ;
+wire    [   9: 0]     alu_op             ;
+wire                  res_from_mem       ;
+wire                  gpr_we             ;
+wire                  mem_we             ;
+wire    [   4: 0]     dest               ;
+wire    [   4: 0]     shamt              ;
+wire    [  11: 0]     imm                ;
+wire    [  31: 0]     rs1_value          ;
+wire    [  31: 0]     rs2_value          ;
 
 reg     [`FS_TO_DS_BUS_WD -1:0]     fs_to_ds_bus_r     ;
 
@@ -95,6 +131,11 @@ assign ds_to_es_bus                 = {
 // ds reg
 reg                   ds_valid           ;
 wire                  ds_ready_go        ;
+wire                  es_blk_valid       ;
+
+wire    [   4: 0]     rs1                ;
+wire    [   4: 0]     rs2                ;
+wire    [   4: 0]     es_rf_dest         ;
 
 assign ds_ready_go      = !(es_blk_valid && (rs1 == es_rf_dest || rs2 == es_rf_dest));
 assign ds_allowin       = !ds_valid || ds_ready_go && es_allowin;
@@ -105,7 +146,7 @@ always @(posedge clk) begin
     end else if (ds_allowin) begin
         ds_valid <= fs_to_ds_valid;
     end
-
+    
     if (fs_to_ds_valid && ds_allowin) begin
         fs_to_ds_bus_r <= fs_to_ds_bus;
     end
@@ -115,10 +156,10 @@ end
 // inst decode
 //-------------------------------------------------------------
 //data flow
-wire    [   4: 0]     dest               ;
-wire    [   4: 0]     shamt              ;
-wire    [   4: 0]     rs1                ;
-wire    [   4: 0]     rs2                ;
+// wire    [   4: 0]     dest               ;
+// wire    [   4: 0]     shamt              ;
+// wire    [   4: 0]     rs1                ;
+// wire    [   4: 0]     rs2                ;
 wire    [   6: 0]     opcode             ;
 wire    [   2: 0]     funct3             ;
 wire    [   6: 0]     funct7             ;
@@ -126,7 +167,7 @@ wire    [ 127: 0]     opcode_d           ;
 wire    [ 127: 0]     funct7_d           ;
 wire    [   7: 0]     funct3_d           ;
 //wire    [  11: 0]     csr_addr           ;
-wire    [  19: 0]     imm_u              ;
+// wire    [  19: 0]     imm_u              ;
 wire    [  11: 0]     imm_i              ;
 wire    [  11: 0]     imm_s              ;
 wire    [  11: 0]     imm_b              ;
@@ -137,8 +178,8 @@ wire    [   4: 0]     rf_raddr1          ;
 wire    [   4: 0]     rf_raddr2          ;
 wire    [  31: 0]     rf_rdata1          ;
 wire    [  31: 0]     rf_rdata2          ;
-wire    [  31: 0]     rs1_value          ;
-wire    [  31: 0]     rs2_value          ;
+// wire    [  31: 0]     rs1_value          ;
+// wire    [  31: 0]     rs2_value          ;
 
 assign dest             = ds_inst[11: 7];
 assign shamt            = ds_inst[24:20];
@@ -193,14 +234,14 @@ wire                  inst_bge           ;
 wire                  inst_bgeu          ;
 
 // memory inst
-wire                  inst_lw            ;
-wire                  inst_lh            ;
-wire                  inst_lhu           ;
-wire                  inst_lb            ;
-wire                  inst_lbu           ;
-wire                  inst_sw            ;
-wire                  inst_sh            ;
-wire                  inst_sb            ;
+// wire                  inst_lw            ;
+// wire                  inst_lh            ;
+// wire                  inst_lhu           ;
+// wire                  inst_lb            ;
+// wire                  inst_lbu           ;
+// wire                  inst_sw            ;
+// wire                  inst_sh            ;
+// wire                  inst_sb            ;
 
 // csr inst
 wire                  inst_csrrw         ;
@@ -215,73 +256,29 @@ wire                  inst_fence         ;
 wire                  inst_fence_i       ;
 
 // other inst
-wire                  inst_ecall         ;
-wire                  inst_ebreak        ;
-wire                  inst_mret          ;
+// wire                  inst_ecall         ;
+// wire                  inst_ebreak        ;
+// wire                  inst_mret          ;
 wire                  inst_wfi           ;
 
 // control signal
 wire                  inst_i_type        ;
 wire                  inst_s_type        ;
 wire                  inst_b_type        ;
-wire                  rs1_is_4           ;
-wire                  rs1_is_imm_u       ;
-wire                  rs2_is_zero        ;
-wire                  rs2_is_imm         ;
-wire                  rs2_is_uimm        ;
-wire                  rs2_is_shamt       ;
-wire                  rs2_is_pc          ;
-wire                  res_from_mem       ;
-wire                  gpr_we             ;
-wire                  mem_we             ;
-wire                  csr_op             ;
-wire    [  11: 0]     imm                ;
-wire    [   9: 0]     alu_op             ;
+// wire                  rs1_is_4           ;
+// wire                  rs1_is_imm_u       ;
+// wire                  rs2_is_zero        ;
+// wire                  rs2_is_imm         ;
+// wire                  rs2_is_shamt       ;
+// wire                  rs2_is_pc          ;
+// wire                  res_from_mem       ;
+// wire                  gpr_we             ;
+// wire                  mem_we             ;
+// wire                  csr_op             ;
+// wire    [  11: 0]     imm                ;
+// wire    [   9: 0]     alu_op             ;
 
-//data flow
-// wire    [   4: 0]     dest               ;
-// wire    [   4: 0]     shamt              ;
-// wire    [   4: 0]     rs1                ;
-// wire    [   4: 0]     rs2                ;
-// wire    [   6: 0]     opcode             ;
-// wire    [   2: 0]     funct3             ;
-// wire    [   6: 0]     funct7             ;
-// wire    [ 127: 0]     opcode_d           ;
-// wire    [ 127: 0]     funct7_d           ;
-// wire    [   7: 0]     funct3_d           ;
-// wire    [  19: 0]     imm_u              ;
-// wire    [  11: 0]     imm_i              ;
-// wire    [  11: 0]     imm_s              ;
-// wire    [  11: 0]     imm_b              ;
-// wire    [  19: 0]     imm_j              ;
-// wire    [   4: 0]     zimm               ;
-
-// wire    [   4: 0]     rf_raddr1          ;
-// wire    [   4: 0]     rf_raddr2          ;
-// wire    [  31: 0]     rf_rdata1          ;
-// wire    [  31: 0]     rf_rdata2          ;
-// wire    [  31: 0]     rs1_value          ;
-// wire    [  31: 0]     rs2_value          ;
-
-//-------------------------------------------------------------
-// inst decode
-//-------------------------------------------------------------
-
-assign dest             = ds_inst[11: 7];
-assign shamt            = ds_inst[24:20];
-assign rs1              = ds_inst[19:15];
-assign rs2              = ds_inst[24:20];
-assign opcode           = ds_inst[ 6: 0];
-assign funct3           = ds_inst[14:12];
-assign funct7           = ds_inst[31:25];
-assign csr_addr         = ds_inst[31:20];
-assign imm_u            = ds_inst[31:12];
-assign imm_i            = ds_inst[31:20];
-assign imm_s            = {ds_inst[31:25],ds_inst[11:7]};
-assign imm_b            = {ds_inst[31:31],ds_inst[7:7],ds_inst[30:25],ds_inst[11:8]};
-assign imm_j            = {ds_inst[31],ds_inst[19:12],ds_inst[20],ds_inst[30:21]};
-assign zimm             = ds_inst[19:15];
-
+// decoder
 decoder_7_128 u_dec0(.in(opcode                 ), .out(opcode_d  ));
 decoder_7_128 u_dec1(.in(funct7                 ), .out(funct7_d  ));
 decoder_3_8   u_dec2(.in(funct3                 ), .out(funct3_d  ));
@@ -389,9 +386,9 @@ assign alu_op[9]        = inst_sra | inst_srai; // Arithmetic shift right
 // forward & block
 //-------------------------------------------------------------
 wire    [   3: 0]     es_fwd_valid       ;
-wire    [   4: 0]     es_rf_dest         ;
+// wire    [   4: 0]     es_rf_dest         ;
 wire    [  31: 0]     es_rf_data         ;
-wire                  es_blk_valid       ;
+// wire                  es_blk_valid       ;
 
 assign {
     es_fwd_valid,   // 41:38
@@ -494,7 +491,7 @@ regfile u_regfile(
 //-------------------------------------------------------------
 // csr
 //-------------------------------------------------------------
-wire    [  31: 0]     csr_wdata          ;
+// wire    [  31: 0]     csr_wdata          ;
 
 assign csr_wdata        = inst_csrrw  ? rs1_value                  :
                           inst_csrrs  ? (csr_rdata | rs1_value)    :
@@ -519,10 +516,9 @@ wire                  ileg_inst          ;
 //                      inst_ecall | inst_ebreak | inst_mret | inst_wfi);
 assign ileg_inst        = 1'b0;
 
-wire                  ds_ex              ;
-wire    [  31: 0]     ds_excode          ;
-wire    [  31: 0]     ds_epc             ;
-wire    [  31: 0]     ds_einst           ;
+// wire                  ds_ex              ;
+// wire    [  31: 0]     ds_excode          ;
+// wire    [  31: 0]     ds_epc             ;
 
 assign ds_ex            = (ileg_inst | inst_ecall | inst_ebreak | inst_wfi |
                            inst_mret | fs_ex) && ds_valid;
