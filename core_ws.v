@@ -14,12 +14,13 @@ module wb_stage(
     output     [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus       ,
     //ex
     output                   ws_ex               ,
-    output                   ws_mret             ,
+    output                   ws_mret             
     //trace debug interface
-    output     [  31: 0]     debug_wb_pc         ,
-    output     [   3: 0]     debug_wb_rf_wen     ,
-    output     [   4: 0]     debug_wb_rf_wnum    ,
-    output     [  31: 0]     debug_wb_rf_wdata   
+    //output                   debug_wb_have_inst  ,
+   // output     [  31: 0]     debug_wb_pc         ,
+    //output                   debug_wb_rf_ena     ,
+    //output     [   4: 0]     debug_wb_rf_wnum    ,
+    //output     [  31: 0]     debug_wb_rf_wdata   
 );
 //-------------------------------------------------------------
 // pipeline
@@ -113,10 +114,11 @@ assign ws_to_csr_bus = {
 ;
 
 // debug info generate
-assign debug_wb_pc      = ws_pc;
-assign debug_wb_rf_wen  = rf_we;
-assign debug_wb_rf_wnum = ws_dest;
-assign debug_wb_rf_wdata= rf_wdata;
+//assign debug_wb_have_inst = ws_valid;
+//assign debug_wb_pc      = ws_pc;
+//assign debug_wb_rf_ena = rf_we[0];
+//assign debug_wb_rf_wnum = ws_dest;
+//assign debug_wb_rf_wdata= rf_wdata;
 
 
 endmodule

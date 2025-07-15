@@ -1,6 +1,6 @@
 `ifndef CPU_CORE_H
     `define CPU_CORE_H
-    `define RESET_ADDR          32'h0000_0000
+    `define RESET_ADDR          32'h8000_0000
 
     `define BR_BUS_WD           33
 `define WS_TO_CSR_BUS_WD    145  
@@ -8,7 +8,7 @@
     `define PS_TO_FS_BUS_WD     129  
     `define FS_TO_DS_BUS_WD     161  
     `define DS_TO_ES_BUS_WD     344 
-    `define ES_TO_MS_BUS_WD     221  
+    `define ES_TO_MS_BUS_WD     253 
     `define MS_TO_WS_BUS_WD     218  
     `define WS_TO_RF_BUS_WD     41
     `define ES_FWD_BLK_BUS_WD   42

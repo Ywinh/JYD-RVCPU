@@ -21,7 +21,8 @@ module exe_stage(
     output                   data_sram_wen        ,
     output     [   1: 0]     data_sram_mask      , // mask
     output     [  31: 0]     data_sram_addr      , // perip_addr
-    output     [  31: 0]     data_sram_wdata     
+    output     [  31: 0]     data_sram_wdata     ,
+    input      [  31: 0]     data_sram_rdata
 );
 //-------------------------------------------------------------
 // pipeline
@@ -120,7 +121,11 @@ wire    [  31: 0]     es_epc             ;
 wire                  es_ex              ;
 wire    [  31: 0]     es_excode          ;
 
+// wire [31:0] es_dram_rdata;
+// assign es_dram_rdata = {32{es_res_from_mem} & data_sram_rdata};
+
 assign es_to_ms_bus = {
+    data_sram_rdata ,                                               //252:221
     es_einst        ,                                               //220:189
     inst_ebreak     ,                                               //188:188
     inst_ecall      ,                                               //187:187
@@ -231,14 +236,15 @@ wire    [  31: 0]     es_ram_wdata       ;
 assign es_ram_wdata     =  es_rs2_value;
 
 wire [1:0] es_access_size;  // 00:1B, 01:2B, 10:4B
-assign es_access_size = es_inst_sb ? 2'b00 :
-                        es_inst_sh ? 2'b01 :
-                        /*sw*/       2'b10;
+assign es_access_size = (es_inst_sb | es_inst_lb | es_inst_lbu) ? 2'b00 :
+                        (es_inst_sh | es_inst_lh | es_inst_lhu) ? 2'b01 :
+                        (es_inst_sw | es_inst_lw)                ? 2'b10 :
+                                                                    2'b10; // Default case
 
 wire    [   1: 0]     es_st_addr         ;
-wire    [  31: 0]     es_mem_dest        ;
+wire    [  15: 0]     es_mem_dest        ; // 修改位数
 
-assign es_mem_dest      = {es_alu_result[31:2],2'b0}; 
+//assign es_mem_dest      = es_alu_result[15:2]; //修改
 assign es_st_addr       = es_alu_result[1:0]; //偏移
 
 // 地址异常检测
@@ -248,7 +254,16 @@ wire addr_misalign      = (es_inst_sh && es_st_addr[0]) |
 // wen含义与模版有出入，修改
 assign data_sram_wen     = es_valid && es_mem_we;
 assign data_sram_mask    = es_access_size;
-assign data_sram_addr   = es_mem_dest;
-assign data_sram_wdata  = es_ram_wdata;
+assign data_sram_addr    = es_alu_result;
+assign data_sram_wdata   = es_rs2_value;
+
+
+// for debug
+// always @(posedge clk) begin
+//     if (es_valid) begin
+//         $display("[INFO] alu_res is %x", es_alu_result);
+//         $display("[INFO] read at %x", data_sram_addr);
+//     end
+// end
 
 endmodule

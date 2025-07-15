@@ -1,46 +1,27 @@
-`timescale 1ns / 1ps
 `include "../imports/core/core.v"
 
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 2025/07/03 22:42:03
-// Design Name: 
-// Module Name: Core_cpu
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-
-module Core_cpu(
-    input cpu_rst,
-    input cpu_clk,
+module Core_cpu (
+    input  logic         cpu_rst,
+    input  logic         cpu_clk,
 
     // Interface to IROM
     output logic [31:0] irom_addr,             
     input logic [31:0] irom_data,   
 
-    // Interface to DRAM & periphera
+    // Interface to DRAM
     output logic [31:0] perip_addr,     
     output logic perip_wen,             // 1:write, 0:read or nop
-    output logic [1:0] perip_mask,      // 00: r/w 1 byte, 01: r/w 2 byte, 10: r/w 4 byte, 
+    // output logic [1:0] perip_mask,      // 00: r/w 1 byte, 01: r/w 2 byte, 10: r/w 4 byte, 
     output logic [31:0] perip_wdata,    
-    input logic [31:0] perip_rdata  
-    );
+    output logic [1:0] perip_mask,
+    input logic [31:0] perip_rdata
 
+);
+
+    // TODO: 完成你自己的单周期CPU设计
 reg                   reset              ;
 wire                  clk = cpu_clk      ;
-always @(posedge clk) reset <= ~cpu_rst;
+always @(posedge clk) reset <= cpu_rst; //�?要修改，这里给出的rst是high active
 
 wire                  ws_ex              ;
 wire                  ws_mret            ;
@@ -70,6 +51,10 @@ wire    [`BR_BUS_WD       -1:0]     br_bus             ;
 wire    [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus      ;
 wire    [`ES_FWD_BLK_BUS_WD -1:0]   es_fwd_blk_bus     ;
 wire    [`MS_FWD_BLK_BUS_WD -1:0]   ms_fwd_blk_bus     ;
+//wire    [1:0]                       es_st_addr         ;
+wire [31:0] pc_next;
+wire        inst_b_type;
+wire        pre_taken;
 
 // PIF stage
 pre_if_stage pre_if_stage(
@@ -88,8 +73,13 @@ pre_if_stage pre_if_stage(
     .csr_mepc       (csr_mepc       ),
     .csr_mtvec      (csr_mtvec      ),
     // inst sram interface
-    .inst_sram_addr (irom_addr )//o,32
+    .inst_sram_addr (irom_addr ),//o,32
+    .inst_b_type(inst_b_type),
+    .new_pc(pc_next)
+    //.flush(flush),
+    //.flush_target(flush_target)
 );
+
 
 // IF stage
 if_stage if_stage(
@@ -110,9 +100,14 @@ if_stage if_stage(
     .ws_ex          (ws_ex          ),
     .ws_mret        (ws_mret        ),
     // inst sram interface
-    .inst_sram_rdata(irom_data)//i,32
+    .inst_sram_rdata(irom_data),//i,32
+    .pc_next(pc_next),
+    .inst_b_type(inst_b_type)
+    //.predict_taken(pre_taken)
+    //.flush(flush)
 );
-
+wire flush;
+wire [31:0] flush_target;
 // ID stage
 id_stage id_stage(
     .clk            (clk            ),
@@ -141,6 +136,9 @@ id_stage id_stage(
     .ms_fwd_blk_bus (ms_fwd_blk_bus ),
     //to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   )
+    //.fw_or_bw       (pre_taken)
+    //.flush          (flush),
+    //.flush_target   (flush_target)
 );
 // EXE stage
 exe_stage exe_stage(
@@ -164,7 +162,10 @@ exe_stage exe_stage(
     .data_sram_wen   (perip_wen   ),
     .data_sram_mask  (perip_mask  ),
     .data_sram_addr (perip_addr ),
-    .data_sram_wdata(perip_wdata)
+    .data_sram_wdata(perip_wdata),
+    //from data-sram
+    .data_sram_rdata(perip_rdata)
+    //.es_st_addr(es_st_addr)
 );
 // MEM stage
 mem_stage mem_stage(
@@ -183,9 +184,8 @@ mem_stage mem_stage(
     .ws_ex          (ws_ex          ),
     .ws_mret        (ws_mret        ),
     // forward & block
-    .ms_fwd_blk_bus (ms_fwd_blk_bus),
-    //from data-sram
-    .data_sram_rdata(perip_rdata)
+    .ms_fwd_blk_bus (ms_fwd_blk_bus)
+    //.ms_st_addr(es_st_addr)
 );
 // WB stage
 wb_stage wb_stage(
@@ -202,12 +202,13 @@ wb_stage wb_stage(
     //to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   ),
     //to csr
-    .ws_to_csr_bus  (ws_to_csr_bus  ),
+    .ws_to_csr_bus  (ws_to_csr_bus  )
     //trace debug interface
-    .debug_wb_pc      (debug_wb_pc      ),
-    .debug_wb_rf_wen  (debug_wb_rf_wen  ),
-    .debug_wb_rf_wnum (debug_wb_rf_wnum ),
-    .debug_wb_rf_wdata(debug_wb_rf_wdata)
-);
-
-endmodule
+    //.debug_wb_have_inst(debug_wb_have_inst),
+    //.debug_wb_pc      (debug_wb_pc      ),
+    //.debug_wb_rf_ena  (debug_wb_ena   ),
+    //.debug_wb_rf_wnum (debug_wb_reg ),
+    //.debug_wb_rf_wdata(debug_wb_value)
+);    
+    
+   endmodule

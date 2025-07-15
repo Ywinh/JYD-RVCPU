@@ -19,7 +19,11 @@ module pre_if_stage(                                                // instructi
     // output                   inst_sram_en        ,
     // output     [   3: 0]     inst_sram_wen       ,
     // output     [  31: 0]     inst_sram_wdata     
-    output     [  31: 0]     inst_sram_addr
+    output     [  31: 0]     inst_sram_addr      ,
+    input                    inst_b_type         ,
+    input      [  31: 0]     new_pc              
+    //input                    flush               ,
+    //input      [ 31: 0]      flush_target      
     );
 
 //-------------------------------------------------------------
@@ -69,9 +73,13 @@ assign {
     br_target
 } = br_bus;
 
-assign ps_pc            = ws_mret  ? csr_mepc  :
-                          ws_ex    ? csr_mtvec :
-                          br_taken ? br_target :
+wire new_pc_judge;
+assign new_pc_judge =inst_b_type ;//&& ~br_taken;
+assign ps_pc            = ws_mret                   ? csr_mepc  :
+                          ws_ex                     ? csr_mtvec :
+                          br_taken                  ? br_target :
+                          (new_pc_judge)            ? new_pc    :
+                          //flush                     ?flush_target:
                           seq_pc;
 
 //-------------------------------------------------------------

@@ -27,7 +27,7 @@ module id_stage(
     // forword & block from ms
     input      [`MS_FWD_BLK_BUS_WD -1:0]     ms_fwd_blk_bus      ,
     //to rf: for write back
-    input      [`WS_TO_RF_BUS_WD -1:0]     ws_to_rf_bus    
+    input      [`WS_TO_RF_BUS_WD -1:0]       ws_to_rf_bus        
                 );
 //-------------------------------------------------------------
 // pipeline
@@ -76,10 +76,13 @@ wire    [   4: 0]     shamt              ;
 wire    [  11: 0]     imm                ;
 wire    [  31: 0]     rs1_value          ;
 wire    [  31: 0]     rs2_value          ;
-
+     
 reg     [`FS_TO_DS_BUS_WD -1:0]     fs_to_ds_bus_r     ;
 
+wire                 fw_or_bw       ;
+wire                 predict_taken  ;
 assign {
+    fw_or_bw,
     fs_epc,                                                         //128:97
     fs_excode,                                                      //96:65
     fs_ex   ,                                                       //64:64
@@ -308,7 +311,7 @@ assign inst_srli        = opcode_d[7'h13] & funct3_d[3'h5] & funct7_d[7'h00];
 assign inst_sra         = opcode_d[7'h33] & funct3_d[3'h5] & funct7_d[7'h20];
 assign inst_srai        = opcode_d[7'h13] & funct3_d[3'h5] & funct7_d[7'h20];
 assign inst_auipc       = opcode_d[7'h17];
-assign inst_lui         = opcode_d[7'h37];
+assign inst_lui        = opcode_d[7'h37];
 
 // branch & jump inst
 assign inst_jal         = opcode_d[7'h6f];
@@ -440,32 +443,72 @@ assign beq_judge        = (rs1_value == rs2_value);
 assign blt_judge        = ($signed(rs1_value) < $signed(rs2_value));
 assign bltu_judge       = (rs1_value < rs2_value);
 
+wire                  actual_taken       ;
+wire                  mispredict         ;
 wire                  ds_br_taken        ;
 wire    [  31: 0]     ds_br_target       ;
+//wire                  flush_target       ;
 
-assign br_stall = ds_br_taken;
-
-assign ds_br_taken      = (
+assign predict_taken = ~ fw_or_bw        ;
+assign actual_taken  = (
     (inst_beq  & beq_judge)   |
     (inst_bne  & !beq_judge)  |
     (inst_blt  & blt_judge)   |
     (inst_bltu & bltu_judge)  |
     (inst_bge  & !blt_judge)  |
-    (inst_bgeu & !bltu_judge) |
-    inst_jal                   |
+    (inst_bgeu & !bltu_judge) 
+);
+assign mispredict = (actual_taken != predict_taken);
+
+assign br_stall = ds_br_taken && ds_ready_go;
+//assign flush = mispredict;
+//assign flush_target = correct_pc;
+
+assign ds_br_taken      = (
+ //   (inst_beq  & beq_judge)   |
+ //   (inst_bne  & !beq_judge)  |
+ //   (inst_blt  & blt_judge)   |
+ //   (inst_bltu & bltu_judge)  |
+ //   (inst_bge  & !blt_judge)  |
+ //   (inst_bgeu & !bltu_judge) |
+    mispredict                | 
+    inst_jal                  |
     inst_jalr
 ) & ds_valid;
+
+//reg            mispredict_valid_r;
+//reg  [ 31 : 0] correct_pc_r;
+//wire           mispredict_valid;
+wire [ 31 : 0] correct_pc;
+
+/*always @(*)
+{
+    if(reset) begin
+        mispredict_valid    = 1'b0;
+        correct_pc          =32'b0;
+    end else if (mispredict) begin
+        mispredict_valid    = 1'b1;
+        correct_pc          = br_b_target;
+    end else begin
+        mispredict_valid    = 1'b0;
+}*/
+
+//assign mispredict_valid = (mispredict == 1'b1) ? 1'b1 : 1'b0;
+assign correct_pc       = (actual_taken) ? br_b_target : (ds_pc+4);
 
 assign br_b_target = $signed({imm_b, 1'b0}) + $signed(ds_pc);
 assign br_j_target = $signed({imm_j, 1'b0}) + $signed(ds_pc);
 assign jalr_target = (($signed({{20{imm_i[11]}}, imm_i}) + $signed(rs1_value)) & ~'h1);
 
-assign ds_br_target     = (inst_beq | inst_bne | inst_blt | inst_bltu | 
-                          inst_bge | inst_bgeu) ? br_b_target :
+assign ds_br_target     = //(inst_beq | inst_bne | inst_blt | inst_bltu | 
+                          //inst_bge | inst_bgeu) ? br_b_target :
+                          mispredict ? correct_pc  :
                           inst_jal   ? br_j_target :
                           inst_jalr  ? jalr_target :
                           ds_pc;              
  
+
+
  assign br_bus = {
     ds_br_taken,
     ds_br_target

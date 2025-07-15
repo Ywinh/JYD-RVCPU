@@ -16,9 +16,10 @@ module mem_stage(
     input                    ws_ex               ,
     input                    ws_mret             ,
     // forword from es
-    output     [`MS_FWD_BLK_BUS_WD -1:0]     ms_fwd_blk_bus      ,
+    output     [`MS_FWD_BLK_BUS_WD -1:0]     ms_fwd_blk_bus     
     //data sram interface
-    input      [  31: 0]     data_sram_rdata   
+    // input      [  31: 0]     data_sram_rdata   
+    //input      [1:0]         ms_st_addr
 );
 
 //-------------------------------------------------------------
@@ -48,7 +49,11 @@ wire                  es_mret            ;
 wire                  es_ecall           ;
 wire                  es_ebreak          ;
 
+wire    [  31: 0]     ms_data_sram_rdata;
+//wire    [   1: 0]     ms_st_addr;
 assign {
+    //ms_st_addr      ,                                              
+    ms_data_sram_rdata ,                                            //252:221
     ms_einst        ,                                               //220:189
     es_ebreak       ,                                               //188:188
     es_ecall        ,                                               //187:187
@@ -72,7 +77,7 @@ assign {
 } = es_to_ms_bus_r;
 
 // to ws
-wire    [  31: 0]     mem_result         ;
+// wire    [  31: 0]     mem_result         ;
 wire    [   3: 0]     ms_gpr_strb        ;
 wire    [  31: 0]     ms_result          ;
 
@@ -159,6 +164,23 @@ assign ms_epc           = es_epc;
 //-------------------------------------------------------------
 // data ram
 //-------------------------------------------------------------
+// wire    [   1: 0]     ms_ld_addr         ;
+// assign ms_ld_addr       = ms_exe_result[1:0];
+
+// //wire    [  31: 0]     ms_lw_data         ;
+// //wire    [  15: 0]     ms_lh_data         ;
+// //wire    [   7: 0]     ms_lb_data         ;
+
+// wire [15:0] ms_raw_halfword = ms_data_sram_rdata[15:0];
+// wire [7:0]  ms_raw_byte     = ms_data_sram_rdata[7:0];
+
+// assign ms_mem_res = ms_inst_lw  ? ms_data_sram_rdata :                      // For lw, use the whole word
+//                     ms_inst_lhu ? {16'b0, ms_raw_halfword} :                // For lhu, zero-extend half-word
+//                     ms_inst_lh  ? {{16{ms_raw_halfword[15]}}, ms_raw_halfword} : // For lh, sign-extend half-word
+//                     ms_inst_lbu ? {24'b0, ms_raw_byte} :                    // For lbu, zero-extend byte
+//                     ms_inst_lb  ? {{24{ms_raw_byte[7]}}, ms_raw_byte} :      // For lb, sign-extend byte
+//                                   32'b0;                                 // Default for non-load instructions
+
 wire    [   1: 0]     ms_ld_addr         ;
 assign ms_ld_addr       = ms_exe_result[1:0];
 
@@ -166,9 +188,9 @@ wire    [  31: 0]     ms_lw_data         ;
 wire    [  15: 0]     ms_lh_data         ;
 wire    [   7: 0]     ms_lb_data         ;
 
-assign ms_lw_data       = data_sram_rdata;
-assign ms_lh_data       = data_sram_rdata[15: 0];
-assign ms_lb_data       = data_sram_rdata[ 7: 0];
+assign ms_lw_data       = ms_data_sram_rdata;
+assign ms_lh_data       = ms_data_sram_rdata[15: 0];
+assign ms_lb_data       = ms_data_sram_rdata[ 7: 0];
 
 assign ms_mem_res       = ms_inst_lh  ? {{16{ms_lh_data[15]}},ms_lh_data} :
                           ms_inst_lhu ? {16'b0,ms_lh_data}:
