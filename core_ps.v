@@ -16,14 +16,10 @@ module pre_if_stage(                                                // instructi
     input      [  31: 0]     csr_mtvec           ,
     input      [  31: 0]     csr_mepc            ,
     // IROM interface
-    // output                   inst_sram_en        ,
-    // output     [   3: 0]     inst_sram_wen       ,
-    // output     [  31: 0]     inst_sram_wdata     
     output     [  31: 0]     inst_sram_addr      ,
+    // branch predict
     input                    inst_b_type         ,
     input      [  31: 0]     new_pc              
-    //input                    flush               ,
-    //input      [ 31: 0]      flush_target      
     );
 
 //-------------------------------------------------------------
@@ -56,9 +52,9 @@ reg     [  31: 0]     seq_pc             ;
 
 always @ (posedge clk   ) begin
     if (reset) begin
-        seq_pc <= `RESET_ADDR;
-    end else if (ps_ready_go && fs_allowin) begin
-        seq_pc <= ps_pc + 32'h4;
+        seq_pc <= `RESET_ADDR;  
+    end else if (ps_ready_go && fs_allowin) begin 
+        seq_pc <= ps_pc + 32'h4; 
     end
 end
 
@@ -98,9 +94,6 @@ assign ps_epc           = ps_pc;
 //-------------------------------------------------------------
 // inst ram
 //-------------------------------------------------------------
-assign inst_sram_en     = 1'b1;
-assign inst_sram_wen    = 4'b0000;
 assign inst_sram_addr   = ps_pc;
-assign inst_sram_wdata  = 32'b0;
 
 endmodule

@@ -18,11 +18,12 @@ module exe_stage(
     // forword & block from es
     output     [`ES_FWD_BLK_BUS_WD -1:0]     es_fwd_blk_bus      ,
     // DRAM interface
-    output                   data_sram_wen        ,
-    output     [   1: 0]     data_sram_mask      , // mask
+    output     [   3: 0]     data_sram_wen        ,
     output     [  31: 0]     data_sram_addr      , // perip_addr
-    output     [  31: 0]     data_sram_wdata     ,
-    input      [  31: 0]     data_sram_rdata
+    output     [  31: 0]     data_sram_wdata     ,     
+    output     [  1: 0]      data_sram_mask     ,
+    // forward: ms_to_es forward to solve sw-lw hazard
+    input      [`MS_FWD_ES_BUS_WD-1:0] ms_fwd_es_bus
 );
 //-------------------------------------------------------------
 // pipeline
@@ -121,11 +122,16 @@ wire    [  31: 0]     es_epc             ;
 wire                  es_ex              ;
 wire    [  31: 0]     es_excode          ;
 
-// wire [31:0] es_dram_rdata;
-// assign es_dram_rdata = {32{es_res_from_mem} & data_sram_rdata};
+wire                  es_store_load_hazard;
+// wire    [  31: 0]     es_final_wdata; 
 
 assign es_to_ms_bus = {
-    data_sram_rdata ,                                               //252:221
+    es_store_load_hazard,                                           //321:321
+    es_mem_we       ,                                               //320:320
+    // es_final_wdata,                                                 //319:288 //这个是ms旁路过来的，保存到bus里面，有点奇怪，用到了吗？
+    data_sram_wen,                                                  //288:285
+    data_sram_addr  ,                                               //31位, 284:253
+    data_sram_wdata ,                                               //252:221 //这个是exe阶段的，保存到bus里面，便于后续传过来
     es_einst        ,                                               //220:189
     inst_ebreak     ,                                               //188:188
     inst_ecall      ,                                               //187:187
@@ -210,6 +216,19 @@ assign es_fwd_blk_bus = {
     es_blk_valid    // 0:0
 };
 
+wire                        ms_valid;
+wire                        ms_mem_we;
+wire        [31:0]          ms_data_sram_addr; // 32位
+assign {
+    ms_valid,          // 65:65
+    ms_mem_we,         // 64:64
+    ms_data_sram_addr // 63:32
+    // es_final_wdata // 31:0
+} = ms_fwd_es_bus;
+
+// sw-lw hazard
+assign es_store_load_hazard = ms_valid & ms_mem_we & (ms_data_sram_addr == data_sram_addr);
+
 //-------------------------------------------------------------
 // exception
 //-------------------------------------------------------------
@@ -232,38 +251,37 @@ assign es_epc           = ds_epc;
 //-------------------------------------------------------------
 // data ram
 //-------------------------------------------------------------
-wire    [  31: 0]     es_ram_wdata       ;
-assign es_ram_wdata     =  es_rs2_value;
+wire    [   31: 0]     es_ram_wdata       ;
+wire    [   31: 0]     es_st_data         ;
+wire    [   1:  0]     es_st_addr         ;
+wire    [  15:  0]     es_mem_dest        ; 
+wire    [   1:  0]     es_access_size     ;
 
-wire [1:0] es_access_size;  // 00:1B, 01:2B, 10:4B
-assign es_access_size = (es_inst_sb | es_inst_lb | es_inst_lbu) ? 2'b00 :
-                        (es_inst_sh | es_inst_lh | es_inst_lhu) ? 2'b01 :
-                        (es_inst_sw | es_inst_lw)                ? 2'b10 :
-                                                                    2'b10; // Default case
-
-wire    [   1: 0]     es_st_addr         ;
-wire    [  15: 0]     es_mem_dest        ; // 修改位数
-
-//assign es_mem_dest      = es_alu_result[15:2]; //修改
+assign es_mem_dest      = es_alu_result[15:2]; //修改
 assign es_st_addr       = es_alu_result[1:0]; //偏移
+assign es_ram_wdata     =  es_rs2_value;
+assign es_st_data = es_inst_sb ? {4{es_rs2_value[ 7:0]}} :  es_inst_sh ? {2{es_rs2_value[15:0]}} :  es_rs2_value[31:0];
+assign es_access_size = es_inst_sb ? 2'b00 :
+                        es_inst_sh ? 2'b01 :
+                        /*sw*/       2'b10;
 
-// 地址异常检测
-wire addr_misalign      = (es_inst_sh && es_st_addr[0]) |
-                     (es_inst_sw && (es_st_addr != 2'b00));
-
-// wen含义与模版有出入，修改
-assign data_sram_wen     = es_valid && es_mem_we;
-assign data_sram_mask    = es_access_size;
-assign data_sram_addr    = es_alu_result;
-assign data_sram_wdata   = es_rs2_value;
-
-
-// for debug
-// always @(posedge clk) begin
-//     if (es_valid) begin
-//         $display("[INFO] alu_res is %x", es_alu_result);
-//         $display("[INFO] read at %x", data_sram_addr);
-//     end
-// end
+// data ram interface
+// assign data_sram_wen     = es_valid && es_mem_we;
+assign data_sram_wen = {4{es_valid}} & (es_inst_sw ? 4'b1111 :
+                        es_inst_sh ? (es_st_addr == 2'b00 ? 4'b0011 :
+                                      es_st_addr == 2'b10 ? 4'b1100 :
+                                      4'b0000
+                                      ) :
+                        es_inst_sb ? (es_st_addr == 2'b00 ? 4'b0001 :
+                                      es_st_addr == 2'b01 ? 4'b0010 :
+                                      es_st_addr == 2'b10 ? 4'b0100 :
+                                      es_st_addr == 2'b11 ? 4'b1000 :
+                                      4'b0000
+                                      ) :
+                        4'b0000);
+                                
+assign data_sram_addr   = es_mem_dest;
+assign data_sram_wdata  = es_st_data;
+assign data_sram_mask   = es_access_size;
 
 endmodule

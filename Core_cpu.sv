@@ -11,17 +11,21 @@ module Core_cpu (
     // Interface to DRAM
     output logic [31:0] perip_addr,     
     output logic perip_wen,             // 1:write, 0:read or nop
-    // output logic [1:0] perip_mask,      // 00: r/w 1 byte, 01: r/w 2 byte, 10: r/w 4 byte, 
+    output logic [1:0] perip_mask,      // 00: r/w 1 byte, 01: r/w 2 byte, 10: r/w 4 byte, 
     output logic [31:0] perip_wdata,    
-    output logic [1:0] perip_mask,
-    input logic [31:0] perip_rdata
+    input logic [31:0] perip_rdata,
 
+    // trace
+    output logic [31:0] debug_wb_pc  ,
+    output logic [3:0] debug_wb_rf_wen ,
+    output logic [4:0] debug_wb_rf_wnum,
+    output logic [31:0] debug_wb_rf_wdata
 );
 
     // TODO: 完成你自己的单周期CPU设计
 reg                   reset              ;
 wire                  clk = cpu_clk      ;
-always @(posedge clk) reset <= cpu_rst; //�?要修改，这里给出的rst是high active
+always @(posedge clk) reset <= cpu_rst; //要修改，这里给出的rst是high active
 
 wire                  ws_ex              ;
 wire                  ws_mret            ;
@@ -51,6 +55,8 @@ wire    [`BR_BUS_WD       -1:0]     br_bus             ;
 wire    [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus      ;
 wire    [`ES_FWD_BLK_BUS_WD -1:0]   es_fwd_blk_bus     ;
 wire    [`MS_FWD_BLK_BUS_WD -1:0]   ms_fwd_blk_bus     ;
+wire    [`MS_FWD_ES_BUS_WD -1:0]    ms_fwd_es_bus      ;
+wire    [`WS_TO_MS_BYPASS_WD -1:0 ]   ws_to_ms_bypass;
 //wire    [1:0]                       es_st_addr         ;
 wire [31:0] pc_next;
 wire        inst_b_type;
@@ -163,9 +169,8 @@ exe_stage exe_stage(
     .data_sram_mask  (perip_mask  ),
     .data_sram_addr (perip_addr ),
     .data_sram_wdata(perip_wdata),
-    //from data-sram
-    .data_sram_rdata(perip_rdata)
-    //.es_st_addr(es_st_addr)
+    // sw-lw forward
+    .ms_fwd_es_bus(ms_fwd_es_bus)
 );
 // MEM stage
 mem_stage mem_stage(
@@ -184,8 +189,12 @@ mem_stage mem_stage(
     .ws_ex          (ws_ex          ),
     .ws_mret        (ws_mret        ),
     // forward & block
-    .ms_fwd_blk_bus (ms_fwd_blk_bus)
-    //.ms_st_addr(es_st_addr)
+    .ms_fwd_blk_bus (ms_fwd_blk_bus),
+    //from data-sram
+    .data_sram_rdata(perip_rdata),
+    // sw-lw forward
+    .ms_fwd_es_bus(ms_fwd_es_bus),
+    .ws_to_ms_bypass(ws_to_ms_bypass)
 );
 // WB stage
 wb_stage wb_stage(
@@ -202,13 +211,14 @@ wb_stage wb_stage(
     //to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   ),
     //to csr
-    .ws_to_csr_bus  (ws_to_csr_bus  )
+    .ws_to_csr_bus  (ws_to_csr_bus  ),
     //trace debug interface
-    //.debug_wb_have_inst(debug_wb_have_inst),
-    //.debug_wb_pc      (debug_wb_pc      ),
-    //.debug_wb_rf_ena  (debug_wb_ena   ),
-    //.debug_wb_rf_wnum (debug_wb_reg ),
-    //.debug_wb_rf_wdata(debug_wb_value)
+    .debug_wb_pc      (debug_wb_pc      ),
+    .debug_wb_rf_wen  (debug_wb_rf_wen   ),
+    .debug_wb_rf_wnum (debug_wb_rf_wnum ),
+    .debug_wb_rf_wdata(debug_wb_rf_wdata),
+
+    .ws_to_ms_bypass(ws_to_ms_bypass)
 );    
     
    endmodule

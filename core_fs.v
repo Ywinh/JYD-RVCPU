@@ -19,10 +19,9 @@ module if_stage(
     input                    ws_mret             ,
     // IROM interface
     input      [  31: 0]     inst_sram_rdata     ,
+    // branch predict
     output     [  31: 0]     pc_next             ,
     output                   inst_b_type         
-    //input                    flush
-    //output                   predict_taken
 );
 
 //-------------------------------------------------------------

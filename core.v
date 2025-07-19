@@ -8,11 +8,13 @@
     `define PS_TO_FS_BUS_WD     129  
     `define FS_TO_DS_BUS_WD     161  
     `define DS_TO_ES_BUS_WD     344 
-    `define ES_TO_MS_BUS_WD     253 
-    `define MS_TO_WS_BUS_WD     218  
+    `define ES_TO_MS_BUS_WD     320 
+    `define MS_TO_WS_BUS_WD     251  
     `define WS_TO_RF_BUS_WD     41
     `define ES_FWD_BLK_BUS_WD   42
     `define MS_FWD_BLK_BUS_WD   42
+    `define MS_FWD_ES_BUS_WD    66
+    `define WS_TO_MS_BYPASS_WD  33
 
     `define EX_IAM              32'h00 // Instruction address misaligned
     `define EX_IAF              32'h01 // Instruction access fault

@@ -14,13 +14,15 @@ module wb_stage(
     output     [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus       ,
     //ex
     output                   ws_ex               ,
-    output                   ws_mret             
+    output                   ws_mret             ,
     //trace debug interface
-    //output                   debug_wb_have_inst  ,
-   // output     [  31: 0]     debug_wb_pc         ,
-    //output                   debug_wb_rf_ena     ,
-    //output     [   4: 0]     debug_wb_rf_wnum    ,
-    //output     [  31: 0]     debug_wb_rf_wdata   
+    output     [  31: 0]     debug_wb_pc         ,
+    output     [   3: 0]     debug_wb_rf_wen    ,
+    output     [   4: 0]     debug_wb_rf_wnum    ,
+    output     [  31: 0]     debug_wb_rf_wdata   ,
+
+    // sw-lw bypass
+    output     [`WS_TO_MS_BYPASS_WD -1:0 ]   ws_to_ms_bypass
 );
 //-------------------------------------------------------------
 // pipeline
@@ -41,8 +43,13 @@ wire    [  31: 0]     ws_excode          ;
 wire    [  31: 0]     ws_epc             ;
 wire                  ws_ebreak          ;
 wire                  ws_ecall           ;
+wire    [   3: 0]     ws_data_sram_wen   ;
+wire    [ 31: 0]      ws_wdata           ;
+wire                  ws_mem_we          ;
 
 assign {
+    ws_wdata,
+    ws_mem_we,
     ws_einst    ,                                                   //217:186
     ws_ebreak   ,                                                   //185:185
     ws_ecall    ,                                                   //184:184
@@ -76,6 +83,11 @@ assign ws_to_rf_bus = {
     rf_we,                                                          //40:37
     rf_waddr,                                                       //36:32
     rf_wdata                                                        //31:0
+};
+
+assign ws_to_ms_bypass = {
+    ws_mem_we,
+    ws_wdata
 };
 
 assign ws_ready_go      = 1'b1;
@@ -114,11 +126,10 @@ assign ws_to_csr_bus = {
 ;
 
 // debug info generate
-//assign debug_wb_have_inst = ws_valid;
-//assign debug_wb_pc      = ws_pc;
-//assign debug_wb_rf_ena = rf_we[0];
-//assign debug_wb_rf_wnum = ws_dest;
-//assign debug_wb_rf_wdata= rf_wdata;
+assign debug_wb_pc      = ws_pc;
+assign debug_wb_rf_wen = {4{ws_valid}} & ws_data_sram_wen;
+assign debug_wb_rf_wnum = ws_dest;
+assign debug_wb_rf_wdata= rf_wdata;
 
 
 endmodule
