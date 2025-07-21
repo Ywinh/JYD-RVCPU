@@ -11,10 +11,11 @@ module pre_if_stage(                                                // instructi
     // from ds
     input      [`BR_BUS_WD       -1:0]     br_bus              ,
     // ex
-    input                    ws_ex               ,
-    input                    ws_mret             ,
-    input      [  31: 0]     csr_mtvec           ,
-    input      [  31: 0]     csr_mepc            ,
+    // input                    ws_ex               ,
+    // input                    ws_mret             ,
+    // input      [  31: 0]     csr_mtvec           ,
+    // input      [  31: 0]     csr_mepc            ,
+
     // IROM interface
     output     [  31: 0]     inst_sram_addr      ,
     // branch predict
@@ -32,9 +33,9 @@ wire    [  31: 0]     ps_epc             ;
 wire    [  31: 0]     ps_excode          ;
 
 assign ps_to_fs_bus    = {
-    ps_epc   ,                                                      //96:65
-    ps_excode,                                                      //64:33
-    ps_ex    ,                                                      //32:32
+    // ps_epc   ,                                                      //96:65
+    // ps_excode,                                                      //64:33
+    // ps_ex    ,                                                      //32:32
     ps_pc                                                           // 31:0
 };
 
@@ -71,25 +72,42 @@ assign {
 
 wire new_pc_judge;
 assign new_pc_judge =inst_b_type ;//&& ~br_taken;
-assign ps_pc            = ws_mret                   ? csr_mepc  :
-                          ws_ex                     ? csr_mtvec :
-                          br_taken                  ? br_target :
-                          (new_pc_judge)            ? new_pc    :
-                          //flush                     ?flush_target:
-                          seq_pc;
+
+reg [31:0] ps_pc_next;
+
+always @(*) begin
+    /*if (ws_mret) begin
+        ps_pc_next = csr_mepc;
+    end else if (ws_ex) begin
+        ps_pc_next = csr_mtvec;
+    end else */
+    if (br_taken) begin
+        ps_pc_next = br_target;
+    end else if (new_pc_judge) begin
+        ps_pc_next = new_pc;
+    end else begin
+        ps_pc_next = seq_pc;
+    end
+end
+
+assign ps_pc = ps_pc_next;
+
+// assign ps_pc            = ws_mret                   ? csr_mepc  :
+//                           ws_ex                     ? csr_mtvec :
+//                           br_taken                  ? br_target :
+//                           (new_pc_judge)            ? new_pc    :
+//                           //flush                     ?flush_target:
+//                           seq_pc;
 
 //-------------------------------------------------------------
 // exception
 //-------------------------------------------------------------
-wire                  ps_addr_error      ;
-// wire                  ps_ex              ;
-// wire    [  31: 0]     ps_epc             ;
-// wire    [  31: 0]     ps_excode          ;
+// wire                  ps_addr_error      ;
 
-assign ps_addr_error    = (ps_pc[1:0] != 2'b00);
-assign ps_ex            = ps_addr_error && ps_valid;
-assign ps_excode        = ps_ex ? `EX_IAM : `EX_NOP;
-assign ps_epc           = ps_pc;
+// assign ps_addr_error    = (ps_pc[1:0] != 2'b00);
+// assign ps_ex            = ps_addr_error && ps_valid;
+// assign ps_excode        = ps_ex ? `EX_IAM : `EX_NOP;
+// assign ps_epc           = ps_pc;
 
 //-------------------------------------------------------------
 // inst ram

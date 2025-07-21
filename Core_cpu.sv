@@ -27,12 +27,12 @@ reg                   reset              ;
 wire                  clk = cpu_clk      ;
 always @(posedge clk) reset <= cpu_rst; //要修改，这里给出的rst是high active
 
-wire                  ws_ex              ;
-wire                  ws_mret            ;
-wire    [  31: 0]     csr_mtvec          ;
-wire    [  31: 0]     csr_mepc           ;
-wire    [  11: 0]     csr_raddr          ;
-wire    [  31: 0]     csr_rdata          ;
+// wire                  ws_ex              ;
+// wire                  ws_mret            ;
+// wire    [  31: 0]     csr_mtvec          ;
+// wire    [  31: 0]     csr_mepc           ;
+// wire    [  11: 0]     csr_raddr          ;
+// wire    [  31: 0]     csr_rdata          ;
 
 wire                  br_stall           ;
 wire                  fs_allowin         ;
@@ -52,7 +52,7 @@ wire    [`ES_TO_MS_BUS_WD -1:0]     es_to_ms_bus       ;
 wire    [`MS_TO_WS_BUS_WD -1:0]     ms_to_ws_bus       ;
 wire    [`WS_TO_RF_BUS_WD -1:0]     ws_to_rf_bus       ;
 wire    [`BR_BUS_WD       -1:0]     br_bus             ;
-wire    [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus      ;
+// wire    [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus      ;
 wire    [`ES_FWD_BLK_BUS_WD -1:0]   es_fwd_blk_bus     ;
 wire    [`MS_FWD_BLK_BUS_WD -1:0]   ms_fwd_blk_bus     ;
 wire    [`MS_FWD_ES_BUS_WD -1:0]    ms_fwd_es_bus      ;
@@ -74,10 +74,10 @@ pre_if_stage pre_if_stage(
     //brbus
     .br_bus         (br_bus         ),
     // ex
-    .ws_ex          (ws_ex          ),
-    .ws_mret        (ws_mret        ),
-    .csr_mepc       (csr_mepc       ),
-    .csr_mtvec      (csr_mtvec      ),
+    // .ws_ex          (ws_ex          ),
+    // .ws_mret        (ws_mret        ),
+    // .csr_mepc       (csr_mepc       ),
+    // .csr_mtvec      (csr_mtvec      ),
     // inst sram interface
     .inst_sram_addr (irom_addr ),//o,32
     .inst_b_type(inst_b_type),
@@ -103,8 +103,8 @@ if_stage if_stage(
     .fs_to_ds_valid (fs_to_ds_valid ),//o
     .fs_to_ds_bus   (fs_to_ds_bus   ),//o
     // ex
-    .ws_ex          (ws_ex          ),
-    .ws_mret        (ws_mret        ),
+    // .ws_ex          (ws_ex          ),
+    // .ws_mret        (ws_mret        ),
     // inst sram interface
     .inst_sram_rdata(irom_data),//i,32
     .pc_next(pc_next),
@@ -132,11 +132,11 @@ id_stage id_stage(
     .ds_to_es_valid (ds_to_es_valid ),
     .ds_to_es_bus   (ds_to_es_bus   ),
     //from csr
-    .csr_addr       (csr_raddr      ),
-    .csr_rdata      (csr_rdata      ),
+    // .csr_addr       (csr_raddr      ),
+    // .csr_rdata      (csr_rdata      ),
     // ex
-    .ws_ex          (ws_ex          ),
-    .ws_mret        (ws_mret        ),
+    // .ws_ex          (ws_ex          ),
+    // .ws_mret        (ws_mret        ),
     // forward & block
     .es_fwd_blk_bus (es_fwd_blk_bus ),
     .ms_fwd_blk_bus (ms_fwd_blk_bus ),
@@ -160,8 +160,8 @@ exe_stage exe_stage(
     .es_to_ms_valid (es_to_ms_valid ),
     .es_to_ms_bus   (es_to_ms_bus   ),
     // ex
-    .ws_ex          (ws_ex          ),
-    .ws_mret        (ws_mret        ),
+    // .ws_ex          (ws_ex          ),
+    // .ws_mret        (ws_mret        ),
     // forward & block
     .es_fwd_blk_bus (es_fwd_blk_bus ),
     // data sram interface
@@ -186,8 +186,8 @@ mem_stage mem_stage(
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
     // ex
-    .ws_ex          (ws_ex          ),
-    .ws_mret        (ws_mret        ),
+    // .ws_ex          (ws_ex          ),
+    // .ws_mret        (ws_mret        ),
     // forward & block
     .ms_fwd_blk_bus (ms_fwd_blk_bus),
     //from data-sram
@@ -206,12 +206,12 @@ wb_stage wb_stage(
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
     // ex
-    .ws_ex          (ws_ex          ),
-    .ws_mret        (ws_mret        ),
+    // .ws_ex          (ws_ex          ),
+    // .ws_mret        (ws_mret        ),
     //to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   ),
     //to csr
-    .ws_to_csr_bus  (ws_to_csr_bus  ),
+    // .ws_to_csr_bus  (ws_to_csr_bus  ),
     //trace debug interface
     .debug_wb_pc      (debug_wb_pc      ),
     .debug_wb_rf_wen  (debug_wb_rf_wen   ),

@@ -5,15 +5,15 @@
     `define BR_BUS_WD           33
 `define WS_TO_CSR_BUS_WD    145  
 
-    `define PS_TO_FS_BUS_WD     129  
-    `define FS_TO_DS_BUS_WD     161  
-    `define DS_TO_ES_BUS_WD     344 
-    `define ES_TO_MS_BUS_WD     320 
-    `define MS_TO_WS_BUS_WD     251  
+    `define PS_TO_FS_BUS_WD     32
+    `define FS_TO_DS_BUS_WD     65 
+    `define DS_TO_ES_BUS_WD     170 
+    `define ES_TO_MS_BUS_WD     150 
+    `define MS_TO_WS_BUS_WD     110  
     `define WS_TO_RF_BUS_WD     41
     `define ES_FWD_BLK_BUS_WD   42
     `define MS_FWD_BLK_BUS_WD   42
-    `define MS_FWD_ES_BUS_WD    66
+    `define MS_FWD_ES_BUS_WD    34
     `define WS_TO_MS_BYPASS_WD  33
 
     `define EX_IAM              32'h00 // Instruction address misaligned

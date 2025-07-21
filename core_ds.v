@@ -17,11 +17,11 @@ module id_stage(
     output                   ds_to_es_valid      ,
     output     [`DS_TO_ES_BUS_WD -1:0]     ds_to_es_bus        ,
     //csr
-    output     [  11: 0]     csr_addr            ,
-    input      [  31: 0]     csr_rdata           ,
+    // output     [  11: 0]     csr_addr            ,
+    // input      [  31: 0]     csr_rdata           ,
     // ex
-    input                    ws_ex               ,
-    input                    ws_mret             ,
+    // input                    ws_ex               ,
+    // input                    ws_mret             ,
     // forword & block from es
     input      [`ES_FWD_BLK_BUS_WD -1:0]     es_fwd_blk_bus      ,
     // forword & block from ms
@@ -33,18 +33,18 @@ module id_stage(
 // pipeline
 //-------------------------------------------------------------
 // from fs
-wire    [  31: 0]     fs_epc             ;
-wire    [  31: 0]     fs_excode          ;
-wire                  fs_ex              ;
+// wire    [  31: 0]     fs_epc             ;
+// wire    [  31: 0]     fs_excode          ;
+// wire                  fs_ex              ;
+// wire    [  31: 0]     ds_einst           ;
+// wire    [  31: 0]     ds_epc             ;
+// wire    [  31: 0]     ds_excode          ;
+// wire                  ds_ex              ;
+// wire    [  31: 0]     csr_wdata          ;
+// wire                  csr_op             ;
+
 wire    [  31: 0]     ds_inst            ;
 wire    [  31: 0]     ds_pc              ;
-wire    [  31: 0]     ds_einst           ;
-wire    [  31: 0]     ds_epc             ;
-wire    [  31: 0]     ds_excode          ;
-wire                  ds_ex              ;
-
-wire    [  31: 0]     csr_wdata          ;
-wire                  csr_op             ;
 
 wire                  inst_jl            ;
 wire                  inst_ebreak        ;
@@ -83,26 +83,26 @@ wire                 fw_or_bw       ;
 wire                 predict_taken  ;
 assign {
     fw_or_bw,
-    fs_epc,                                                         //128:97
-    fs_excode,                                                      //96:65
-    fs_ex   ,                                                       //64:64
+    // fs_epc,                                                         //128:97
+    // fs_excode,                                                      //96:65
+    // fs_ex   ,                                                       //64:64
     ds_inst,
     ds_pc
 }               = fs_to_ds_bus_r;
 
 // to es
 assign ds_to_es_bus                 = {
-    ds_einst     ,                                                  //342:311
-    inst_ebreak  ,                                                  //310:310
-    inst_ecall   ,                                                  //309:309
+    // ds_einst     ,                                                  //342:311
+    // inst_ebreak  ,                                                  //310:310
+    // inst_ecall   ,                                                  //309:309
     inst_jl      ,                                                  //308:308
-    ds_epc       ,                                                  //307:276
-    ds_excode    ,                                                  //275:244
-    ds_ex        ,                                                  //243:243
-    inst_mret    ,                                                  //242:242
-    csr_addr     ,                                                  //241:230
-    csr_rdata    ,                                                  //229:198
-    csr_wdata    ,                                                  //197:166
+    // ds_epc       ,                                                  //307:276
+    // ds_excode    ,                                                  //275:244
+    // ds_ex        ,                                                  //243:243
+    // inst_mret    ,                                                  //242:242
+    // csr_addr     ,                                                  //241:230
+    // csr_rdata    ,                                                  //229:198
+    // csr_wdata    ,                                                  //197:166
     inst_lw      ,                                                  //165:165
     inst_lh      ,                                                  //164:164
     inst_lhu     ,                                                  //163:163
@@ -142,7 +142,7 @@ wire    [   4: 0]     es_rf_dest         ;
 
 assign ds_ready_go      = !(es_blk_valid && (rs1 == es_rf_dest || rs2 == es_rf_dest));
 assign ds_allowin       = !ds_valid || ds_ready_go && es_allowin;
-assign ds_to_es_valid   = ds_valid && ds_ready_go && !ws_mret && !ws_ex;
+assign ds_to_es_valid   = ds_valid && ds_ready_go /*&& !ws_mret && !ws_ex*/;
 always @(posedge clk) begin
     if (reset) begin
         ds_valid <= 1'b0;
@@ -159,17 +159,12 @@ end
 // inst decode
 //-------------------------------------------------------------
 //data flow
-// wire    [   4: 0]     dest               ;
-// wire    [   4: 0]     shamt              ;
-// wire    [   4: 0]     rs1                ;
-// wire    [   4: 0]     rs2                ;
 wire    [   6: 0]     opcode             ;
 wire    [   2: 0]     funct3             ;
 wire    [   6: 0]     funct7             ;
 wire    [ 127: 0]     opcode_d           ;
 wire    [ 127: 0]     funct7_d           ;
 wire    [   7: 0]     funct3_d           ;
-//wire    [  11: 0]     csr_addr           ;
 // wire    [  19: 0]     imm_u              ;
 wire    [  11: 0]     imm_i              ;
 wire    [  11: 0]     imm_s              ;
@@ -181,8 +176,6 @@ wire    [   4: 0]     rf_raddr1          ;
 wire    [   4: 0]     rf_raddr2          ;
 wire    [  31: 0]     rf_rdata1          ;
 wire    [  31: 0]     rf_rdata2          ;
-// wire    [  31: 0]     rs1_value          ;
-// wire    [  31: 0]     rs2_value          ;
 
 assign dest             = ds_inst[11: 7];
 assign shamt            = ds_inst[24:20];
@@ -419,15 +412,35 @@ assign {
     rf_wdata                                                        //31:0
 }               = ws_to_rf_bus;
 
-assign rs1_value        = 
-    ((es_fwd_valid == 4'b1111) && (es_rf_dest == rs1) && (rs1 != 5'b0)) ? es_rf_data :
-    ((ms_fwd_valid == 4'b1111) && (ms_rf_dest == rs1) && (rs1 != 5'b0)) ? ms_rf_data :
-    ((rf_we == 4'b1111) && (rf_waddr  == rs1) && (rs1 != 5'b0)) ? rf_wdata :rf_rdata1;
+// assign rs1_value        = 
+//     ((es_fwd_valid == 4'b1111) && (es_rf_dest == rs1) && (rs1 != 5'b0)) ? es_rf_data :
+//     ((ms_fwd_valid == 4'b1111) && (ms_rf_dest == rs1) && (rs1 != 5'b0)) ? ms_rf_data :
+//     ((rf_we == 4'b1111) && (rf_waddr  == rs1) && (rs1 != 5'b0)) ? rf_wdata :rf_rdata1;
 
-assign rs2_value        = 
-    ((es_fwd_valid == 4'b1111) && (es_rf_dest == rs2) && (rs2 != 5'b0)) ? es_rf_data :
-    ((ms_fwd_valid == 4'b1111) && (ms_rf_dest == rs2) && (rs2 != 5'b0)) ? ms_rf_data :
-    ((rf_we == 4'b1111) && (rf_waddr  == rs2) && (rs2 != 5'b0)) ? rf_wdata :rf_rdata2;
+// assign rs2_value        = 
+//     ((es_fwd_valid == 4'b1111) && (es_rf_dest == rs2) && (rs2 != 5'b0)) ? es_rf_data :
+//     ((ms_fwd_valid == 4'b1111) && (ms_rf_dest == rs2) && (rs2 != 5'b0)) ? ms_rf_data :
+//     ((rf_we == 4'b1111) && (rf_waddr  == rs2) && (rs2 != 5'b0)) ? rf_wdata :rf_rdata2;
+
+// Forwarding for rs1
+wire es_fwd_rs1 = (es_fwd_valid == 4'b1111) && (es_rf_dest == rs1) && (rs1 != 5'b0);
+wire ms_fwd_rs1 = (ms_fwd_valid == 4'b1111) && (ms_rf_dest == rs1) && (rs1 != 5'b0);
+wire wb_fwd_rs1 = (rf_we        == 4'b1111) && (rf_waddr  == rs1) && (rs1 != 5'b0);
+
+assign rs1_value = es_fwd_rs1 ? es_rf_data :
+                   ms_fwd_rs1 ? ms_rf_data :
+                   wb_fwd_rs1 ? rf_wdata  :
+                                rf_rdata1;
+
+// Forwarding for rs2
+wire es_fwd_rs2 = (es_fwd_valid == 4'b1111) && (es_rf_dest == rs2) && (rs2 != 5'b0);
+wire ms_fwd_rs2 = (ms_fwd_valid == 4'b1111) && (ms_rf_dest == rs2) && (rs2 != 5'b0);
+wire wb_fwd_rs2 = (rf_we        == 4'b1111) && (rf_waddr  == rs2) && (rs2 != 5'b0);
+
+assign rs2_value = es_fwd_rs2 ? es_rf_data :
+                   ms_fwd_rs2 ? ms_rf_data :
+                   wb_fwd_rs2 ? rf_wdata  :
+                                rf_rdata2;
 
 //-------------------------------------------------------------
 // branch and jump
@@ -536,41 +549,41 @@ regfile u_regfile(
 //-------------------------------------------------------------
 // wire    [  31: 0]     csr_wdata          ;
 
-assign csr_wdata        = inst_csrrw  ? rs1_value                  :
-                          inst_csrrs  ? (csr_rdata | rs1_value)    :
-                          inst_csrrc  ? (csr_rdata & ~rs1_value)   :
-                          inst_csrrwi ? {27'b0,zimm}               :
-                          inst_csrrsi ? (csr_rdata | {27'b0,zimm}) :
-                        /*inst_csrrci*/ (csr_rdata & ~{27'b0,zimm});
+// assign csr_wdata        = inst_csrrw  ? rs1_value                  :
+//                           inst_csrrs  ? (csr_rdata | rs1_value)    :
+//                           inst_csrrc  ? (csr_rdata & ~rs1_value)   :
+//                           inst_csrrwi ? {27'b0,zimm}               :
+//                           inst_csrrsi ? (csr_rdata | {27'b0,zimm}) :
+//                         /*inst_csrrci*/ (csr_rdata & ~{27'b0,zimm});
 
 //-------------------------------------------------------------
 // exception
 //-------------------------------------------------------------
-wire                  ileg_inst          ;
-// assign ileg_inst = ~(inst_add | inst_addi | inst_sub | inst_slt | inst_sltu |
-//                      inst_sltiu | inst_slti | inst_and | inst_andi | inst_or |
-//                      inst_ori | inst_xor | inst_xori | inst_sll | inst_slli |
-//                      inst_srl | inst_srli | inst_sra | inst_srai | inst_auipc | 
-//                      inst_lui | inst_jal | inst_jalr | inst_beq | inst_bne | 
-//                      inst_blt | inst_bltu | inst_bge | inst_bgeu | inst_lw |
-//                      inst_lh | inst_lhu | inst_lb | inst_lbu | inst_sw | inst_sh |
-//                      inst_sb | inst_csrrw | inst_csrrwi | inst_csrrs | inst_csrrsi |
-//                      inst_csrrc | inst_csrrci | inst_fence | inst_fence_i | 
-//                      inst_ecall | inst_ebreak | inst_mret | inst_wfi);
-assign ileg_inst        = 1'b0;
+// wire                  ileg_inst          ;
+// // assign ileg_inst = ~(inst_add | inst_addi | inst_sub | inst_slt | inst_sltu |
+// //                      inst_sltiu | inst_slti | inst_and | inst_andi | inst_or |
+// //                      inst_ori | inst_xor | inst_xori | inst_sll | inst_slli |
+// //                      inst_srl | inst_srli | inst_sra | inst_srai | inst_auipc | 
+// //                      inst_lui | inst_jal | inst_jalr | inst_beq | inst_bne | 
+// //                      inst_blt | inst_bltu | inst_bge | inst_bgeu | inst_lw |
+// //                      inst_lh | inst_lhu | inst_lb | inst_lbu | inst_sw | inst_sh |
+// //                      inst_sb | inst_csrrw | inst_csrrwi | inst_csrrs | inst_csrrsi |
+// //                      inst_csrrc | inst_csrrci | inst_fence | inst_fence_i | 
+// //                      inst_ecall | inst_ebreak | inst_mret | inst_wfi);
+// assign ileg_inst        = 1'b0;
 
-// wire                  ds_ex              ;
-// wire    [  31: 0]     ds_excode          ;
-// wire    [  31: 0]     ds_epc             ;
+// // wire                  ds_ex              ;
+// // wire    [  31: 0]     ds_excode          ;
+// // wire    [  31: 0]     ds_epc             ;
 
-assign ds_ex            = (ileg_inst | inst_ecall | inst_ebreak | inst_wfi |
-                           inst_mret | fs_ex) && ds_valid;
-assign ds_excode        = ileg_inst  ? `EX_IILL :
-                          inst_ecall ? `EX_EMM :
-                          inst_ebreak? `EX_BP :
-                          fs_excode; // TODO : wfi
-//tip : actually ds_epc always same as ds_pc
-assign ds_epc           = (inst_ecall | inst_ebreak) ? ds_pc : fs_epc;
-assign ds_einst         = ds_inst;
+// assign ds_ex            = (ileg_inst | inst_ecall | inst_ebreak | inst_wfi |
+//                            inst_mret | fs_ex) && ds_valid;
+// assign ds_excode        = ileg_inst  ? `EX_IILL :
+//                           inst_ecall ? `EX_EMM :
+//                           inst_ebreak? `EX_BP :
+//                           fs_excode; // TODO : wfi
+// //tip : actually ds_epc always same as ds_pc
+// assign ds_epc           = (inst_ecall | inst_ebreak) ? ds_pc : fs_epc;
+// assign ds_einst         = ds_inst;
 
 endmodule

@@ -50,16 +50,16 @@ wire        adder_cout;
 assign adder_a   = alu_src1;
 assign adder_b   = (op_sub | op_slt | op_sltu) ? ~alu_src2 : alu_src2;
 assign adder_cin = (op_sub | op_slt | op_sltu) ? 1'b1      : 1'b0;
-// assign {adder_cout, adder_result} = adder_a + adder_b + adder_cin;
+assign {adder_cout, adder_result} = adder_a + adder_b + adder_cin;
 
 // output declaration of module lca
-lca u_lca(
-  .op1  	(adder_a   ),
-  .op2  	(adder_b   ),
-  .cin  	(adder_cin  ),
-  .sum  	(adder_result   ),
-  .cout 	(adder_cout  )
-);
+// lca u_lca(
+//   .op1  	(adder_a   ),
+//   .op2  	(adder_b   ),
+//   .cin  	(adder_cin  ),
+//   .sum  	(adder_result   ),
+//   .cout 	(adder_cout  )
+// );
 
 // ADD, SUB result
 assign add_sub_result = adder_result;

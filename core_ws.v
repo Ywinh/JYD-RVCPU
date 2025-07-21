@@ -11,10 +11,10 @@ module wb_stage(
     //to rf: for write back
     output     [`WS_TO_RF_BUS_WD -1:0]     ws_to_rf_bus        ,
     //to csr
-    output     [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus       ,
+    // output     [`WS_TO_CSR_BUS_WD -1:0]    ws_to_csr_bus       ,
     //ex
-    output                   ws_ex               ,
-    output                   ws_mret             ,
+    // output                   ws_ex               ,
+    // output                   ws_mret             ,
     //trace debug interface
     output     [  31: 0]     debug_wb_pc         ,
     output     [   3: 0]     debug_wb_rf_wen    ,
@@ -29,36 +29,38 @@ module wb_stage(
 //-------------------------------------------------------------
 //from ms
 reg     [`MS_TO_WS_BUS_WD -1:0]     ms_to_ws_bus_r     ;
-wire                  ws_csr_op          ;
 wire    [   3: 0]     ws_gpr_strb        ;
 wire    [   4: 0]     ws_dest            ;
-wire    [  11: 0]     ws_csr_addr        ;
 wire    [  31: 0]     ws_result          ;
-wire    [  31: 0]     ws_pc              ;
-wire    [  31: 0]     ws_einst           ;
-wire    [  31: 0]     ws_csr_wdata       ;
-wire                  ms_to_ws_ex        ;
-wire                  ms_to_ws_mret      ;
-wire    [  31: 0]     ws_excode          ;
-wire    [  31: 0]     ws_epc             ;
-wire                  ws_ebreak          ;
-wire                  ws_ecall           ;
 wire    [ 31: 0]      ws_wdata           ;
 wire                  ws_mem_we          ;
+wire    [  31: 0]     ws_pc              ;
+
+
+// wire    [  31: 0]     ws_einst           ;
+// wire    [  31: 0]     ws_csr_wdata       ;
+// wire                  ms_to_ws_ex        ;
+// wire                  ms_to_ws_mret      ;
+// wire    [  31: 0]     ws_excode          ;
+// wire    [  31: 0]     ws_epc             ;
+// wire                  ws_ebreak          ;
+// wire                  ws_ecall           ;
+// wire                  ws_csr_op          ;
+// wire    [  11: 0]     ws_csr_addr        ;
 
 assign {
     ws_wdata,
     ws_mem_we,
-    ws_einst    ,                                                   //217:186
-    ws_ebreak   ,                                                   //185:185
-    ws_ecall    ,                                                   //184:184
-    ws_epc      ,                                                   //183:152
-    ws_excode   ,                                                   //151:120
-    ms_to_ws_ex ,                                                   //119:119
-    ms_to_ws_mret,                                                  //118:118
-    ws_csr_op   ,                                                   //117:117
-    ws_csr_addr ,                                                   //116:105
-    ws_csr_wdata,                                                   //104:73
+    // ws_einst    ,                                                   //217:186
+    // ws_ebreak   ,                                                   //185:185
+    // ws_ecall    ,                                                   //184:184
+    // ws_epc      ,                                                   //183:152
+    // ws_excode   ,                                                   //151:120
+    // ms_to_ws_ex ,                                                   //119:119
+    // ms_to_ws_mret,                                                  //118:118
+    // ws_csr_op   ,                                                   //117:117
+    // ws_csr_addr ,                                                   //116:105
+    // ws_csr_wdata,                                                   //104:73
     ws_gpr_strb ,                                                   //72:69
     ws_dest     ,                                                   //68:64
     ws_result   ,                                                   //63:32
@@ -107,22 +109,22 @@ end
 //-------------------------------------------------------------
 // csr
 //-------------------------------------------------------------
-assign ws_ex            = ms_to_ws_ex && ws_valid;
-assign ws_mret          = ms_to_ws_mret && ws_valid;
+// assign ws_ex            = ms_to_ws_ex && ws_valid;
+// assign ws_mret          = ms_to_ws_mret && ws_valid;
 
-assign ws_to_csr_bus = {
-    ws_einst,                                                       //144:113
-    ws_ebreak,                                                      //112:112
-    ws_ecall,                                                       //111:111
-    ws_epc,                                                         //110:79
-    ws_excode,                                                      //78:47
-    ws_ex,                                                          //46:46
-    ws_mret,                                                        //45:45
-    ws_csr_wdata,                                                   //44:2
-    ws_csr_addr ,                                                   //12:1
-    ws_csr_op                                                       //0:0
-}
-;
+// assign ws_to_csr_bus = {
+//     ws_einst,                                                       //144:113
+//     ws_ebreak,                                                      //112:112
+//     ws_ecall,                                                       //111:111
+//     ws_epc,                                                         //110:79
+//     ws_excode,                                                      //78:47
+//     ws_ex,                                                          //46:46
+//     ws_mret,                                                        //45:45
+//     ws_csr_wdata,                                                   //44:2
+//     ws_csr_addr ,                                                   //12:1
+//     ws_csr_op                                                       //0:0
+// }
+// ;
 
 // debug info generate
 assign debug_wb_pc      = ws_pc;
