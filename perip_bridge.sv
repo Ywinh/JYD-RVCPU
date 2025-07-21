@@ -101,7 +101,7 @@ module perip_bridge(
         .perip_addr			(perip_addr[17:0]),
         .perip_wdata		(perip_wdata),
         .perip_mask			(perip_mask),
-        .dram_wen 			(wen & (perip_addr >= DRAM_ADDR_START && perip_addr < DRAM_ADDR_END)),
+        .dram_wen 			( {4{(perip_addr >= DRAM_ADDR_START && perip_addr < DRAM_ADDR_END)}} & perip_wen),
         .perip_rdata		(dram_rdata)
     );
 
@@ -114,11 +114,21 @@ module perip_bridge(
         .perip_rdata		(cnt_rdata)
     );
 
+    logic [31:0] perip_addr_r;
+    logic [3:0]  perip_wen_r;
+    logic        wen_r;
+
+    always_ff @(posedge clk) begin
+        perip_addr_r <= perip_addr;
+        perip_wen_r  <= perip_wen;
+        wen_r        <= wen;
+    end
+    
     assign perip_rdata = {32{perip_addr == SW0_ADDR}} & mmio_rdata |
                         {32{perip_addr == SW1_ADDR}} & mmio_rdata |
                         {32{perip_addr == KEY_ADDR}} & mmio_rdata |
                         {32{perip_addr == SEG_ADDR}} & mmio_rdata |
-                        {32{perip_addr >= DRAM_ADDR_START && perip_addr < DRAM_ADDR_END}} & dram_rdata |
+                        {32{perip_addr_r >= DRAM_ADDR_START && perip_addr_r < DRAM_ADDR_END}} & dram_rdata |
                         {32{perip_addr == CNT_ADDR}} & cnt_rdata;
     
     assign virtual_led_output = LED;

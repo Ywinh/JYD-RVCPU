@@ -53,19 +53,28 @@ module dram_driver(
     //     .d          (dram_data)
     // );
 
+    logic [1:0] perip_mask_r;
+    logic [1:0] offset_r;
+
+    // 在每个周期寄存请求信息
+    always_ff @(posedge clk) begin
+        perip_mask_r <= perip_mask;
+        offset_r     <= offset;
+    end
+
     // dram_rdata_raw process, lh lb
     always_comb begin
         dout = 0;
-        case (perip_mask)
+        case (perip_mask_r)
             2'b00: // lb/lbu
-                case (offset)
+                case (offset_r)
                     2'b00:  dout = {24'b0, dram_rdata_raw[7:0]};
                     2'b01:  dout = {24'b0, dram_rdata_raw[15:8]};
                     2'b10:  dout = {24'b0, dram_rdata_raw[23:16]};
                     2'b11:  dout = {24'b0, dram_rdata_raw[31:24]};
                 endcase
             2'b01: // lh/lhu
-                case (offset[1])
+                case (offset_r[1])
                     1'b0:  dout = {24'b0, dram_rdata_raw[15:0]};
                     1'b1:  dout = {24'b0, dram_rdata_raw[31:16]};
                 endcase

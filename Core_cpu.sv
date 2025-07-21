@@ -10,7 +10,7 @@ module Core_cpu (
 
     // Interface to DRAM
     output logic [31:0] perip_addr,     
-    output logic perip_wen,             // 1:write, 0:read or nop
+    output logic [3:0] perip_wen,             // 1:write, 0:read or nop
     output logic [1:0] perip_mask,      // 00: r/w 1 byte, 01: r/w 2 byte, 10: r/w 4 byte, 
     output logic [31:0] perip_wdata,    
     input logic [31:0] perip_rdata,

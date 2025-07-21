@@ -168,12 +168,17 @@ assign ms_fwd_es_bus = {
     ms_data_sram_addr // 63:32
     // final_wdata // 31:0
 };
+
 assign final_wdata = ({32{ms_data_sram_wen[0]}} & {24'b0, ms_data_sram_wdata[7:0]})   |
                      ({32{ms_data_sram_wen[1]}} & {16'b0, ms_data_sram_wdata[15:8], 8'b0}) |
                      ({32{ms_data_sram_wen[2]}} & {8'b0, ms_data_sram_wdata[23:16], 16'b0}) |
                      ({32{ms_data_sram_wen[3]}} & {ms_data_sram_wdata[31:24], 24'b0}) |
                      // 保留未写入位
-                     (~{8{ms_data_sram_wen[3], ms_data_sram_wen[2], ms_data_sram_wen[1], ms_data_sram_wen[0]}} & data_sram_rdata);
+                     ({ ~{8{ms_data_sram_wen[3]}},
+                        ~{8{ms_data_sram_wen[2]}},
+                        ~{8{ms_data_sram_wen[1]}},
+                        ~{8{ms_data_sram_wen[0]}} } 
+                        & data_sram_rdata);
 
 // ws to ms bypass
 wire                    ws_mem_we;

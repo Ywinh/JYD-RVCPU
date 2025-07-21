@@ -43,7 +43,6 @@ wire    [  31: 0]     ws_excode          ;
 wire    [  31: 0]     ws_epc             ;
 wire                  ws_ebreak          ;
 wire                  ws_ecall           ;
-wire    [   3: 0]     ws_data_sram_wen   ;
 wire    [ 31: 0]      ws_wdata           ;
 wire                  ws_mem_we          ;
 
@@ -127,7 +126,7 @@ assign ws_to_csr_bus = {
 
 // debug info generate
 assign debug_wb_pc      = ws_pc;
-assign debug_wb_rf_wen = {4{ws_valid}} & ws_data_sram_wen;
+assign debug_wb_rf_wen = {4{ws_valid}} & rf_we;
 assign debug_wb_rf_wnum = ws_dest;
 assign debug_wb_rf_wdata= rf_wdata;
 

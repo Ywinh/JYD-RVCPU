@@ -261,9 +261,9 @@ assign es_mem_dest      = es_alu_result[15:2]; //修改
 assign es_st_addr       = es_alu_result[1:0]; //偏移
 assign es_ram_wdata     =  es_rs2_value;
 assign es_st_data = es_inst_sb ? {4{es_rs2_value[ 7:0]}} :  es_inst_sh ? {2{es_rs2_value[15:0]}} :  es_rs2_value[31:0];
-assign es_access_size = es_inst_sb ? 2'b00 :
-                        es_inst_sh ? 2'b01 :
-                        /*sw*/       2'b10;
+assign es_access_size = (es_inst_sb | es_inst_lb | es_inst_lbu )? 2'b00 :
+                        (es_inst_sh | es_inst_lh | es_inst_lhu)? 2'b01 :
+                        /*sw,lw*/       2'b10;
 
 // data ram interface
 // assign data_sram_wen     = es_valid && es_mem_we;
@@ -280,7 +280,7 @@ assign data_sram_wen = {4{es_valid}} & (es_inst_sw ? 4'b1111 :
                                       ) :
                         4'b0000);
                                 
-assign data_sram_addr   = es_mem_dest;
+assign data_sram_addr   = es_alu_result;
 assign data_sram_wdata  = es_st_data;
 assign data_sram_mask   = es_access_size;
 
